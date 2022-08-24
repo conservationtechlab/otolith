@@ -1,22 +1,28 @@
-
+#include "SAMDTimerInterrupt.h"
+#include "SAMD_ISR_Timer.h"
 #include <SPI.h>
 #include <SD.h>
 #include <DFRobot_BMX160.h>
 
-const int chipSelect = 4;
 
-const String FILE_NAME = "imudata.txt";
+#define TIMER_INTERVAL_20HZ       50L
+#define TIMER_INTERVAL_1HZ        1000L
+#define HW_TIMER_INTERVAL_MS      10
+#define CHIP_SELECT               4
+#define FILE_NAME                 "intrupt1.txt"
 
 long microsStart = 0;
-long logCount = 0;
 DFRobot_BMX160 bmx160;
+SAMDTimer ITimer(TIMER_TC3);
+SAMD_ISR_Timer ISR_Timer;
+String flushableString = "";
 
 void setup() {
   delay(100);
   
   // set up SD
   // see if the card is present and can be initialized:
-  if (!SD.begin(chipSelect)) {
+  if (!SD.begin(CHIP_SELECT)) {
     while(1);
   }
 
@@ -24,6 +30,12 @@ void setup() {
   if (bmx160.begin() != true){
     while(1);
   }
+
+  if (ITimer.attachInterruptInterval_MS(HW_TIMER_INTERVAL_MS, TimerHandler)){
+    ;
+  }
+  ISR_Timer.setInterval(TIMER_INTERVAL_20HZ,  readingImuData);
+  ISR_Timer.setInterval(TIMER_INTERVAL_1HZ,  uploadingImuData);
 
   // open file
   File dataFile = SD.open(FILE_NAME, FILE_WRITE);
@@ -42,25 +54,40 @@ void setup() {
   delay(100);
 }
 
-void loop() {
+void loop() { }
+
+
+void TimerHandler(void){
+  ISR_Timer.run();
+}
+
+
+void readingImuData() {
   /* Initialize time start for data timestamps */
   if (microsStart == 0){
     digitalWrite(LED_BUILTIN, HIGH);
     delay(100);
     digitalWrite(LED_BUILTIN, LOW);
     microsStart = micros();
-    String dataLog = getDataLog();
-    uploadString(dataLog);
-    logCount++;
   }
-
-  if ((micros() - microsStart)/100000 >= logCount) {
-    String dataLog = getDataLog();
-    uploadString(dataLog);
-    logCount++;
-  }
-
+  flushableString += getDataLog() + "\n";
 }
+
+
+void uploadingImuData(){
+  String tempString = flushableString;
+  if (tempString.length() == flushableString.length()){
+    flushableString = "";
+  }
+  else {
+    uploadingImuData();
+    return;
+  }
+  digitalWrite(LED_BUILTIN, HIGH);
+  uploadString(tempString);
+  digitalWrite(LED_BUILTIN, LOW);
+}
+
 
 String getDataLog() {
   sBmx160SensorData_t Omagn, Ogyro, Oaccel;
@@ -74,13 +101,15 @@ String getDataLog() {
   return dataString;
 }
 
+
 void uploadString(String data) {
   File dataFile = SD.open(FILE_NAME, FILE_WRITE);
   if (dataFile) {
-    dataFile.println(data);
+    dataFile.print(data);
     dataFile.close();
   }
 }
+
 
 String readableDateTime() {
   double totalSeconds = (micros() - microsStart)/1000000.0;
