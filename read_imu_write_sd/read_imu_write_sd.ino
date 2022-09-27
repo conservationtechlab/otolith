@@ -9,10 +9,10 @@
 #define TIMER_INTERVAL_WRITE      1000L
 #define HW_TIMER_INTERVAL_MS      10
 #define CHIP_SELECT               4
-#define FILE_NAME                 "intrupt2.txt"
+#define FILE_NAME                 "intrupt3.txt"
 String  DELIM =                   "\t";
 
-long microsStart = 0;
+long millisStart = 0;
 DFRobot_BMX160 bmx160;
 SAMDTimer ITimer(TIMER_TC3);
 SAMD_ISR_Timer ISR_Timer;
@@ -37,11 +37,11 @@ void setup() {
   }
 
   /* Initialize time start for data timestamps */
-  if (microsStart == 0){
+  if (millisStart == 0){
     digitalWrite(LED_BUILTIN, HIGH);
     delay(500);
     digitalWrite(LED_BUILTIN, LOW);
-    microsStart = micros();
+    millisStart = millis();
   }
   
   ISR_Timer.setInterval(TIMER_INTERVAL_READ,  readingImuData);
@@ -113,10 +113,10 @@ void uploadString(String data) {
 
 
 String readableDateTime() {
-  double totalSeconds = (micros() - microsStart)/1000000.0;
+  double totalSeconds = (millis() - millisStart)/100.0;
   int totalMinutes = floor(totalSeconds)/60;
   int totalHours = floor(totalSeconds)/3600;
-  int totalDays = 1 + floor(totalSeconds)/86400; //add 1 because January 0th isn't valid
+  int totalDays = floor(totalSeconds)/86400;  // add 1 after because January 0th isn't valid
   double secondsDouble = totalSeconds - totalMinutes*60;
   int seconds = floor(secondsDouble);
   int minutes = totalMinutes - totalHours*60;
@@ -124,7 +124,7 @@ String readableDateTime() {
   String yearMonth = " 1970-01-";
   char dateTimeCharArray[19];
   int deciseconds = round((secondsDouble - seconds)*1000000);
-  sprintf(dateTimeCharArray, "%02d %02d:%02d:%02d.%06d", totalDays, hours, minutes, seconds, deciseconds); 
+  sprintf(dateTimeCharArray, "%02d %02d:%02d:%02d.%06d", totalDays+1, hours, minutes, seconds, deciseconds); 
       //after one month, the date stops being valid -- perhaps include long of time along with human-readable
   
   return yearMonth + String(dateTimeCharArray); 
