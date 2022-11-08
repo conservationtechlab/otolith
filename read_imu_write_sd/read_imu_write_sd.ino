@@ -2,7 +2,7 @@
  * Purpose: 20 Hz IMU data collection using an Arduino solution for elephant collar
  * Organization: San Diego Zoo Wildlife Association: Conservation Technology Lab
  * Author: Trent Moca 
- * Date: 11/8
+ * Date: 11/8/22
  * 
  * This code collects timestamped IMU data at a frequency of 20 Hz for the elephant collar
  * project of the SDZWA Conservation Tech Lab (CTL). Data is collected using an interrupt then 
