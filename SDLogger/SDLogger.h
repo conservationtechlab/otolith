@@ -1,12 +1,12 @@
 
-#ifndef OTOLITH_LOGGER_H
-#define OTOLITH_LOGGER_H
+#ifndef SD_LOGGER_H
+#define SD_LOGGER_H
 
 #include <Arduino.h>
 #include <SPI.h>
 #include <SD.h>
 
-class otolithLogger {
+class SDLogger {
 private:
     uint8_t cs;
     String logFileName;
@@ -21,7 +21,7 @@ private:
 
 
 public:
-    otolithLogger(uint8_t);
+    SDLogger(uint8_t);
 
 
     bool log(String message);

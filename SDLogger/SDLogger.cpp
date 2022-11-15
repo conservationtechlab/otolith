@@ -1,16 +1,16 @@
-#include <otolithLogger.h>
+#include <SDLogger.h>
 
 
 // FILE_WRITE is set to append mode (flag is 0x04) -> check SD documentation, SD.h and SdFat.h
 #define FILE_WRITE_ANY FILE_WRITE & 0XFB
 
-otolithLogger::otolithLogger(uint8_t chipS){
+SDLogger::SDLogger(uint8_t chipS){
     cs = chipS;
     configFileName = "CONF_LOG.txt";
     spiStarted = false;
 }
 
-bool otolithLogger::beginLogFile(String logName){
+bool SDLogger::beginLogFile(String logName){
 
     spiStarted = SD.begin(cs);
     if (!spiStarted){
@@ -49,7 +49,7 @@ bool otolithLogger::beginLogFile(String logName){
 }
 
 
-bool otolithLogger::log(String message){
+bool SDLogger::log(String message){
     File logFile = SD.open(logFileName, FILE_WRITE);
     if (logFile) {
         logFile.println(message);
@@ -60,7 +60,7 @@ bool otolithLogger::log(String message){
 }
 
 
-bool otolithLogger::newConfig(String logName){
+bool SDLogger::newConfig(String logName){
     if (!spiStarted){
         return false;
     }
@@ -77,7 +77,7 @@ bool otolithLogger::newConfig(String logName){
 }
 
 
-bool otolithLogger::writeOverConfig(File* configFile, String fileName, byte num){
+bool SDLogger::writeOverConfig(File* configFile, String fileName, byte num){
     if (num == 0){  // overflow protection
         return false;
     }
@@ -88,13 +88,13 @@ bool otolithLogger::writeOverConfig(File* configFile, String fileName, byte num)
 }
 
 
-byte otolithLogger::getLogFileNum(String s){
+byte SDLogger::getLogFileNum(String s){
     int i = s.indexOf(',');
     return (byte) (s.substring(i+1).toInt());
 }
 
 
-String otolithLogger::getLogFileName(String s){
+String SDLogger::getLogFileName(String s){
     int i = s.indexOf(',');
     return s.substring(0,i);
 }
