@@ -3,66 +3,71 @@
 #include <SPI.h>
 #include <SD.h>
 #include <DFRobot_BMX160.h>
+#include <SDLogger.h>
 
-
+// Contants, macros
 #define TIMER_INTERVAL_READ       50L
 #define TIMER_INTERVAL_WRITE      1000L
 #define HW_TIMER_INTERVAL_MS      10
 #define CHIP_SELECT               4
-#define FILE_NAME                 "intrupt3.txt"
+#define FILE_NAME                 "OTO"
 String  DELIM =                   "\t";
 
+// Globals
 long millisStart = 0;
 DFRobot_BMX160 bmx160;
 SAMDTimer ITimer(TIMER_TC3);
 SAMD_ISR_Timer ISR_Timer;
 String flushableString = "";
+SDLogger logger = NULL;
+
 
 void setup() {
   delay(100);
-  
-  // set up SD
-  // see if the card is present and can be initialized:
-  if (!SD.begin(CHIP_SELECT)) {
-    while(1);
-  }
 
   // set up IMU
   if (bmx160.begin() != true){
+    digitalWrite(LED_BUILTIN, HIGH);
     while(1);
   }
 
+  // Create SDLogger object to handle file creation and logging
+  logger = SDLogger(CHIP_SELECT);
+  if (logger.beginLogFile(FILE_NAME) != true){
+    digitalWrite(LED_BUILTIN, HIGH);
+    while(1);
+  }
+
+  // Create header for data log
+  String timeStamp = "StartTime: TODO";
+  logger.log(timeStamp);
+  String fieldHeader = "address" + DELIM + "Time(s)" + DELIM + "ChipTime";
+  fieldHeader += DELIM + "ax(m/s^2)" + DELIM + "ay(m/s^2)" + DELIM + "az(m/s^2)";
+  fieldHeader += DELIM + "wx(g)" + DELIM + "wy(g)" + DELIM + "wz(g)";
+  fieldHeader += DELIM + "AngleX(deg)" + DELIM + "AngleY(deg)" + DELIM + "AngleZ(deg)" + DELIM + "T(°)";
+  fieldHeader += DELIM + "hx(uT)" + DELIM + "hy(uT)" + DELIM + "hz(uT)";
+  logger.log(fieldHeader);
+
+  // Enable board for interrupts
   if (ITimer.attachInterruptInterval_MS(HW_TIMER_INTERVAL_MS, TimerHandler)){
     ;
   }
 
-  /* Initialize time start for data timestamps */
+  // Initialize time start for data timestamps
   if (millisStart == 0){
     digitalWrite(LED_BUILTIN, HIGH);
     delay(500);
     digitalWrite(LED_BUILTIN, LOW);
     millisStart = millis();
   }
-  
+
+  // Begin interrupts
   ISR_Timer.setInterval(TIMER_INTERVAL_READ,  readingImuData);
   ISR_Timer.setInterval(TIMER_INTERVAL_WRITE, uploadingImuData);
 
-  // open file
-  File dataFile = SD.open(FILE_NAME, FILE_WRITE);
-  if (dataFile) {
-    String timeStamp = "StartTime: TODO";
-    String fieldHeader = "address" + DELIM + "Time(s)" + DELIM + "ChipTime";
-    fieldHeader += DELIM + "ax(m/s^2)" + DELIM + "ay(m/s^2)" + DELIM + "az(m/s^2)";
-    fieldHeader += DELIM + "wx(g)" + DELIM + "wy(g)" + DELIM + "wz(g)";
-    fieldHeader += DELIM + "AngleX(deg)" + DELIM + "AngleY(deg)" + DELIM + "AngleZ(deg)" + DELIM + "T(°)";
-    fieldHeader += DELIM + "hx(uT)" + DELIM + "hy(uT)" + DELIM + "hz(uT)";
-    dataFile.println(timeStamp);
-    dataFile.println(fieldHeader);
-    dataFile.close();
-  }
-
   delay(100);
 }
+
 
 void loop() { }
 
@@ -86,7 +91,7 @@ void uploadingImuData(){
     uploadingImuData();
     return;
   }
-  uploadString(tempString);
+  logger.log(tempString.substring(0,tempString.length()-1)); // shave off the last newline char
 }
 
 
@@ -100,15 +105,6 @@ String getDataLog() {
   dataString += DELIM + DELIM + DELIM + DELIM;
   dataString += String(Omagn.x) + DELIM + String(Omagn.y) + DELIM + String(Omagn.z) + DELIM; 
   return dataString;
-}
-
-
-void uploadString(String data) {
-  File dataFile = SD.open(FILE_NAME, FILE_WRITE);
-  if (dataFile) {
-    dataFile.print(data);
-    dataFile.close();
-  }
 }
 
 
