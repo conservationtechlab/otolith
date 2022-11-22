@@ -1,0 +1,22 @@
+
+DATA_TITLES_ROW = 1 # +1 for the first data row
+DATETIME_COL = 2
+
+ACCEL_X = 3
+ACCEL_Y = 4
+ACCEL_Z = 5
+
+ANG_VEL_X = 6
+ANG_VEL_Y = 7
+ANG_VEL_Z = 8
+
+ANGLE_X = 9
+ANGLE_Y = 10
+ANGLE_Z = 11
+
+T_DEG = 12
+
+MAG_X = 13
+MAG_Y = 14
+MAG_Z = 15
+
