@@ -1,3 +1,24 @@
+/******************************************************************************************************
+ * Purpose: 20 Hz IMU data collection using an Arduino solution for elephant collar
+ * Organization: San Diego Zoo Wildlife Association: Conservation Technology Lab
+ * Author: Trent Moca 
+ * Date: 11/22/22
+ * 
+ * This code collects timestamped IMU data at a frequency of 20 Hz for the elephant collar
+ * project of the SDZWA Conservation Tech Lab (CTL). Data is collected using an interrupt then 
+ * stored onto the SD card onto a new file created at bootup. The total system uses a SAMD based
+ * Arduino board (e.g. MKRWAN1310) with a DFRobotics BMX160 breakout board 
+ * (https://www.dfrobot.com/product-2141.html) connected over the I2C headers and an SD card 
+ * connected using the SPI headers (or using the SD shield for the MKR series Arduino boards). 
+ * 
+ * Methods: Data is collected using a 20Hz timer, in which is appended to a String global 
+ * variable. Data cannot be immediately added to the SD card because the write operation 
+ * takes more than 50 ms. Another interrupt, at 1Hz, handles the write operation, flushing 
+ * the global String (flushableString) and writing to the SD card. The writing to the SD card 
+ * is handled by the SDLogger library, which creates a new file each bootup for data capture.
+ * 
+ */
+
 #include "SAMDTimerInterrupt.h"
 #include "SAMD_ISR_Timer.h"
 #include <SPI.h>
