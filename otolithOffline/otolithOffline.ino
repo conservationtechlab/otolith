@@ -62,7 +62,7 @@ void setup() {
   // Create header for data log
   /*String timeStamp = "StartTime: TODO";
   logger.log(timeStamp);*/ /* commented out until we fix this */
-  String fieldHeader = "address" + DELIM + "Time(s)" + DELIM + "ChipTime";
+  String fieldHeader = "address" + DELIM + "Time(s)";
   fieldHeader += DELIM + "ax(m/s^2)" + DELIM + "ay(m/s^2)" + DELIM + "az(m/s^2)";
   fieldHeader += DELIM + "wx(g)" + DELIM + "wy(g)" + DELIM + "wz(g)";
   /*fieldHeader += DELIM + "AngleX(deg)" + DELIM + "AngleY(deg)" + DELIM + "AngleZ(deg)" + DELIM + "T(°)";*/ /*the accelerometer doesn't record this data*/
