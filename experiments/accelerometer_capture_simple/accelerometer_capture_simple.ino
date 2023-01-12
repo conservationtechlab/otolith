@@ -1,6 +1,5 @@
 #include <DFRobot_BMX160.h>
 #include <SPI.h>
-#include <SD.h>
 #include <SDLogger.h>
 
 #define CHIP_SELECT               4
@@ -10,7 +9,6 @@ String  DELIM =                   ",";
 DFRobot_BMX160 bmx160;
 String flushableString = "\n";
 SDLogger logger = NULL;
-String filesep = "End of write";
 
 
 void setup() {
@@ -19,17 +17,17 @@ void setup() {
     while(1);
   }
 
-   logger = SDLogger(CHIP_SELECT);
+ logger = SDLogger(CHIP_SELECT);
   if (logger.beginLogFile(FILE_NAME) != true){
     digitalWrite(LED_BUILTIN, HIGH);
     while(1);
   }
   
-  String fieldHeader = "Time(s)";
-  fieldHeader += DELIM + "ax(m/s^2)" + DELIM + "ay(m/s^2)" + DELIM + "az(m/s^2)";
-  fieldHeader += DELIM + "wx(g)" + DELIM + "wy(g)" + DELIM + "wz(g)";
-  fieldHeader += DELIM + "hx(uT)" + DELIM + "hy(uT)" + DELIM + "hz(uT)";
-  logger.log(fieldHeader);
+ String fieldHeader = "Time(ms)";
+ fieldHeader += DELIM + "ax(m/s^2)" + DELIM + "ay(m/s^2)" + DELIM + "az(m/s^2)";
+ fieldHeader += DELIM + "wx(g)" + DELIM + "wy(g)" + DELIM + "wz(g)";
+ fieldHeader += DELIM + "hx(uT)" + DELIM + "hy(uT)" + DELIM + "hz(uT)";
+ logger.log(fieldHeader);
 
 }
 
@@ -46,11 +44,10 @@ String getDataLog() {
 
 
 void loop() {
-  for (int i = 0; i < 175; i++){
+  for (int i = 0; i < 150; i++){
   flushableString += getDataLog() + "\n";
-  delay(49);
+  delay(50);
   }
   logger.log(flushableString);
   flushableString = "";
-  return;
 }
