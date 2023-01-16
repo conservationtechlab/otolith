@@ -12,6 +12,9 @@ SDLogger logger = NULL;
 
 
 void setup() {
+  pinMode(LORA_RESET, OUTPUT);
+  digitalWrite(LORA_RESET, LOW);
+
  if (bmx160.begin() != true){
     digitalWrite(LED_BUILTIN, HIGH);
     while(1);
@@ -44,9 +47,9 @@ String getDataLog() {
 
 
 void loop() {
-  for (int i = 0; i < 150; i++){
+  for (int i = 0; i < 100; i++){
   flushableString += getDataLog() + "\n";
-  delay(50);
+  delay(45);
   }
   logger.log(flushableString);
   flushableString = "";
