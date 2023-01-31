@@ -7,6 +7,10 @@ Datasheet.pdf) currently served in the repository at:
 
 git@github.com:WITMOTION/WT901.git
 
+Usage example:
+
+    python process_witmotion_data_logs.py DATA_FILE OUTPUT_FILE
+
 """
 import argparse
 import csv
