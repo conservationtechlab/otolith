@@ -65,7 +65,12 @@ DFRobot_BMX160 bmx160;
 // Each SAMD_ISR_Timer can service 16 different ISR-based timers
 SAMD_ISR_Timer ISR_Timer;
 
+// Init a flashable string
+String flushableString = "";
+String DELIM = ",";
+
 #define TIMER_INTERVAL_50MS             50L
+#define TIMER_INTERVAL_1S             1000L
 
 void TimerHandler(void)
 {
@@ -73,78 +78,70 @@ void TimerHandler(void)
 }
 
 // Get the IMU data from the 9-axis sensor and log it onto the SD card
-void GetIMUData()
-{
-  // Generate a date using the RTC
-  // TODO
-  File dataFile = SD.open("DATA.txt", FILE_WRITE);
-  sBmx160SensorData_t Mag, Gyro, Accel;
+void GetIMUData() {
+    sBmx160SensorData_t Mag, Gyro, Accel;
+    bmx160.getAllData(&Mag, &Gyro, &Accel);
 
-  bmx160.getAllData(&Mag, &Gyro, &Accel);
+    // DEBUGGING PURPOSE
+    Serial.print("Gyro: ");
+    Serial.print(Gyro.x);
+    Serial.print(", ");
+    Serial.print(Gyro.y);
+    Serial.print(", ");
+    Serial.print(Gyro.z);
+    Serial.print(" Accel: ");
+    Serial.print(Accel.x);
+    Serial.print(", ");
+    Serial.print(Accel.y);
+    Serial.print(", ");
+    Serial.print(Accel.z);
+    Serial.print(" Mag: ");
+    Serial.print(Mag.x);
+    Serial.print(", ");
+    Serial.print(Mag.y);
+    Serial.print(", ");
+    Serial.println(Mag.z);
 
-  // Print all the data
-  Serial.print("Gyro: ");
-  Serial.print(Gyro.x);
-  Serial.print(", ");
-  Serial.print(Gyro.y);
-  Serial.print(", ");
-  Serial.print(Gyro.z);
-  
-  Serial.print(" Accel: ");
-  Serial.print(Accel.x);
-  Serial.print(", ");
-  Serial.print(Accel.y);
-  Serial.print(", ");
-  Serial.print(Accel.z);
-
-    
-  Serial.print(" Mag: ");
-  Serial.print(Mag.x);
-  Serial.print(", ");
-  Serial.print(Mag.y);
-  Serial.print(", ");
-  Serial.println(Mag.z);
-
-  // Write to the SD card
-  if (dataFile) {
-    dataFile.print("Time: ");
-    dataFile.print(millis());
-    
-    dataFile.print(" Gyro: ");
-    dataFile.print(Gyro.x);
-    dataFile.print(", ");
-    dataFile.print(Gyro.y);
-    dataFile.print(", ");
-    dataFile.print(Gyro.z);
-    
-    dataFile.print(" Accel: ");
-    dataFile.print(Accel.x);
-    dataFile.print(", ");
-    dataFile.print(Accel.y);
-    dataFile.print(", ");
-    dataFile.print(Accel.z);
-
-    dataFile.print(" Mag: ");
-    dataFile.print(Mag.x);
-    dataFile.print(", ");
-    dataFile.print(Mag.y);
-    dataFile.print(", ");
-    dataFile.println(Mag.z);
-    dataFile.close();
-  } else {
-    Serial.println("Error opening datalog.txt!");
-  }
+    flushableString += String(millis()) + DELIM;  // TODO: change the time using RTC
+    flushableString += String(Accel.x) + DELIM + String(Accel.y) + DELIM + String(Accel.z) + DELIM; // write 3 axis accelerometer
+    flushableString += String(Gyro.x) + DELIM + String(Gyro.y) + DELIM + String(Gyro.z) + DELIM;  // write 3 axis gyroscope
+    flushableString += String(Mag.x) + DELIM + String(Mag.y) + DELIM + String(Mag.z) + "\n";  // write 3 axis magnetometer
 }
+
+// Write the IMU data to the SD card
+void WriteIMUData() {
+  // TODO: Modify the csv files to sync RTC using a YYMMDD format
+    File dataFile = SD.open("231006.txt", FILE_WRITE);
+    
+    if (dataFile) {
+        // If file is empty or just created, write the headers
+        if (dataFile.size() == 0) {
+            dataFile.println("Time, AccelX, AccelY, AccelZ, GyroX, GyroY, GyroZ, MagX, MagY, MagZ");
+        }
+        
+        // Now write the actual data
+        dataFile.print(flushableString);
+        dataFile.close();
+        
+        // reset the flushableString
+        flushableString = "";
+        
+    } else {
+        Serial.println("Error opening datalog.txt!");
+    }
+}
+
 
 void setup()
 {
   // sets the baud rate for serial data communication
+  // DEBUG PURPOSE
   Serial.begin(115200);
   while (!Serial && millis() < 5000);
 
   delay(100);
 
-  // Initialize the 
+  // Initialize the 9-axis sensor
   if (bmx160.begin() != true) {
     Serial.println("BMX160 not detected. Please check your wiring.");
     while (1);
@@ -167,6 +164,7 @@ void setup()
   
   // can use up to 16 timer for each ISR_Timer
   ISR_Timer.setInterval(TIMER_INTERVAL_50MS,  GetIMUData);
+  ISR_Timer.setInterval(TIMER_INTERVAL_1S,  WriteIMUData);
 }
 
 
