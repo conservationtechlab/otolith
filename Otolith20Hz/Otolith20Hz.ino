@@ -25,6 +25,8 @@
 #include <SPI.h>
 #include <SD.h>
 #include <DFRobot_BMX160.h>
+#include <TCA9548A.h>
+#include <RTClib.h>
 
 // TC3, TC4, TC5 max permissible HW_TIMER_INTERVAL_MS is 1398.101 ms, larger will overflow, therefore not permitted
 // Use TCC, TCC1, TCC2 for longer HW_TIMER_INTERVAL_MS
@@ -59,6 +61,8 @@
 // Init selected SAMD timer
 SAMDTimer ITimer(SELECTED_TIMER);
 DFRobot_BMX160 bmx160;
+TCA9548A I2CMux;
+RTC_DS3231 rtc; // Create an instance of the DS3231 RTC
 ////////////////////////////////////////////////
 
 // Init SAMD_ISR_Timer
@@ -68,9 +72,12 @@ SAMD_ISR_Timer ISR_Timer;
 // Init a flashable string
 String flushableString = "";
 String DELIM = ",";
+DateTime now;
 
 #define TIMER_INTERVAL_50MS             50L
 #define TIMER_INTERVAL_1S             1000L
+#define IMU_CHANNEL                      2
+#define RTC_CHANNEL                      3
 
 void TimerHandler(void)
 {
@@ -79,39 +86,29 @@ void TimerHandler(void)
 
 // Get the IMU data from the 9-axis sensor and log it onto the SD card
 void GetIMUData() {
+    // get the RTC time
+    I2CMux.openChannel(RTC_CHANNEL);
+    now = rtc.now();
+    String formattedDateTime = String(now.year()) + "-" + twoDigits(now.month()) + "-" + twoDigits(now.day()) + " " + twoDigits(now.hour()) + ":" + twoDigits(now.minute()) + ":" + twoDigits(now.second())+ DELIM;
+    flushableString += formattedDateTime;
+    I2CMux.closeChannel(RTC_CHANNEL);
+
+    // get the IMU data
+    I2CMux.openChannel(IMU_CHANNEL);
     sBmx160SensorData_t Mag, Gyro, Accel;
     bmx160.getAllData(&Mag, &Gyro, &Accel);
 
-    // DEBUGGING PURPOSE
-    Serial.print("Gyro: ");
-    Serial.print(Gyro.x);
-    Serial.print(", ");
-    Serial.print(Gyro.y);
-    Serial.print(", ");
-    Serial.print(Gyro.z);
-    Serial.print(" Accel: ");
-    Serial.print(Accel.x);
-    Serial.print(", ");
-    Serial.print(Accel.y);
-    Serial.print(", ");
-    Serial.print(Accel.z);
-    Serial.print(" Mag: ");
-    Serial.print(Mag.x);
-    Serial.print(", ");
-    Serial.print(Mag.y);
-    Serial.print(", ");
-    Serial.println(Mag.z);
-
-    flushableString += String(millis()) + DELIM;  // TODO: change the time using RTC
     flushableString += String(Accel.x) + DELIM + String(Accel.y) + DELIM + String(Accel.z) + DELIM; // write 3 axis accelerometer
     flushableString += String(Gyro.x) + DELIM + String(Gyro.y) + DELIM + String(Gyro.z) + DELIM;  // write 3 axis gyroscope
     flushableString += String(Mag.x) + DELIM + String(Mag.y) + DELIM + String(Mag.z) + "\n";  // write 3 axis magnetometer
+    
+    I2CMux.closeChannel(IMU_CHANNEL);
 }
 
 // Write the IMU data to the SD card
 void WriteIMUData() {
-  // TODO: Modify the csv files to sync RTC using a YYMMDD format
-    File dataFile = SD.open("231006.txt", FILE_WRITE);
+    String fileName = twoDigits(now.year() % 100) + twoDigits(now.month()) + twoDigits(now.day()) + ".txt";
+    File dataFile = SD.open(fileName, FILE_WRITE);
     
     if (dataFile) {
         // If file is empty or just created, write the headers
@@ -131,6 +128,12 @@ void WriteIMUData() {
     }
 }
 
+String twoDigits(int number) {
+  if (number < 10) {
+    return "0" + String(number);
+  }
+  return String(number);
+}
 
 void setup()
 {
@@ -141,6 +144,12 @@ void setup()
 
   delay(100);
 
+  // Set up the I2C multiplexer TCA9548A
+  I2CMux.begin(Wire);
+  I2CMux.closeAll();
+
+  I2CMux.openChannel(IMU_CHANNEL);
+  
   // Initialize the 9-axis sensor
   if (bmx160.begin() != true) {
     Serial.println("BMX160 not detected. Please check your wiring.");
@@ -161,7 +170,20 @@ void setup()
     return;
   }
   Serial.println("SD card initialized successfully!");
+
+  // open the channel for RTC
+  I2CMux.closeChannel(IMU_CHANNEL);
+  I2CMux.openChannel(RTC_CHANNEL);
   
+  // set up the DS3231 RTC
+  if (!rtc.begin()) {
+    Serial.println("Couldn't find RTC");
+    while (1);
+  }
+
+  // Uncomment the next line if want to set the RTC to a specific date and time
+   rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+ 
   // can use up to 16 timer for each ISR_Timer
   ISR_Timer.setInterval(TIMER_INTERVAL_50MS,  GetIMUData);
   ISR_Timer.setInterval(TIMER_INTERVAL_1S,  WriteIMUData);
