@@ -1,74 +1,60 @@
 # This is a data interpolation script
 # Author: Grace Jin
-# We interpolate the data at exact 20HZ to minimize the effect of minor timeshift in the data acquisition
+# Interpolate the data at exact 20HZ to minimize the effect of minor timeshift in the data acquisition
 
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
-
 
 # This function imports the csv data and convert the data into a dataframe
 def import_file(name):
-    # Use pandas to read the CSV-formatted text file
     df = pd.read_csv(name)
+    print(df.columns)  # This will print all the column names
     return df
 
 
 # This function interpolates the data to exact 20HZ and output the interpolated file
 def interpolate(df, output_filename):
-    # Assuming 'Time' column is in milliseconds
-    # Create a new time range from min to max of the existing time column with 50ms intervals (20Hz)
-    new_time = np.arange(df['Time'].min(), df['Time'].max(), 50)
-    new_df = pd.DataFrame(new_time, columns=['Time'])
+    # Convert 'RealTime' to datetime format
+    df['RealTime'] = pd.to_datetime(df['RealTime'], format="%H:%M:%S")
 
-    # Merge the new time frame with the original data and interpolate the missing values
-    new_df = pd.merge_asof(new_df, df, on='Time', direction='nearest').interpolate()
+    # Calculate the millisecond part using the time difference with the first row
+    elapsed_time = df['SystemTime(ms)'] - df['SystemTime(ms)'].iloc[0]
+    df['RealTime'] += pd.to_timedelta(elapsed_time, unit='ms')
 
-    # Save the interpolated data to a new CSV file
-    new_df.to_csv(output_filename, index=False)
-    print(f"Interpolated data saved to {output_filename}")
+    # Set the 'RealTime' column as index
+    df.set_index('RealTime', inplace=True)
+
+    # Create a datetime range for interpolation
+    start_time = df.index[0]
+    end_time = df.index[-1]
+    time_range = pd.date_range(start=start_time, end=end_time, freq='50ms')
+
+    # Resample the DataFrame to this datetime range and interpolate
+    df_resampled = df.reindex(time_range).interpolate(method='index')
+
+    # Convert the index back to the desired string format
+    df_resampled.index = df_resampled.index.strftime('%H:%M:%S:%f').str[:-3]
+    df_resampled.reset_index(inplace=True)
+    df_resampled.rename(columns={"index": "RealTime"}, inplace=True)
+
+    # Drop the SystemTime(ms) column
+    df_resampled.drop(columns=['SystemTime(ms)'], errors='ignore', inplace=True)
+
+    # Save the dataframe to a CSV file
+    df_resampled.to_csv(output_filename, index=False)
 
 
 # This function plots the 9-axis data trend
 def visualization(df):
-    time = df['Time']
-    # check the column names of the data
-    print(data.columns)
-    # Plot accelerometer data
-    plt.figure(figsize=(10, 6))
-    plt.plot(time, df['AccelX'], label='AccelX')
-    plt.plot(time, df['AccelY'], label='AccelY')
-    plt.plot(time, df['AccelZ'], label='AccelZ')
-    plt.title('Accelerometer Data Trend')
-    plt.xlabel('Time (ms)')
-    plt.ylabel('Acceleration')
-    plt.legend()
-    plt.grid(True)
-    plt.show()
-
-    # Plot gyroscope data
-    plt.figure(figsize=(10, 6))
-    plt.plot(time, df['GyroX'], label='GyroX')
-    plt.plot(time, df['GyroY'], label='GyroY')
-    plt.plot(time, df['GyroZ'], label='GyroZ')
-    plt.title('Gyroscope Data Trend')
-    plt.xlabel('Time (ms)')
-    plt.ylabel('Angular Velocity')
-    plt.legend()
-    plt.grid(True)
-    plt.show()
-
-    # Plot magnetometer data
-    plt.figure(figsize=(10, 6))
-    plt.plot(time, df['MagX'], label='MagX')
-    plt.plot(time, df['MagY'], label='MagY')
-    plt.plot(time, df['MagZ'], label='MagZ')
-    plt.title('Magnetometer Data Trend')
-    plt.xlabel('Time (ms)')
-    plt.ylabel('Magnetic Field Strength')
-    plt.legend()
-    plt.grid(True)
-    plt.show()
+    columns = df.columns[2:]
+    for column in columns:
+        plt.figure(figsize=(10, 5)) # Create a new figure for each column
+        plt.plot(df["SystemTime(ms)"], df[column], label=column)
+        plt.xlabel('SystemTime(ms)')
+        plt.ylabel('Value')
+        plt.legend(loc='upper right')
+        plt.title(f'{column} data trend')
+        plt.show()
 
 
 if __name__ == '__main__':
@@ -77,6 +63,3 @@ if __name__ == '__main__':
     data = import_file(filename)
     interpolate(data, "interpolated"+filename+".csv")
     visualization(data)
-
-
-
