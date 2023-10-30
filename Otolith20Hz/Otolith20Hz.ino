@@ -115,7 +115,7 @@ void WriteIMUData() {
     if (dataFile) {
         // If file is empty or just created, write the headers
         if (dataFile.size() == 0) {
-            dataFile.println("SystemTime(ms), RealTime, AccelX, AccelY, AccelZ, GyroX, GyroY, GyroZ, MagX, MagY, MagZ");
+            dataFile.println("SystemTime(ms),RealTime,AccelX,AccelY,AccelZ,GyroX,GyroY,GyroZ,MagX,MagY,MagZ");
         }
         
         // Now write the actual data
