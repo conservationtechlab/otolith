@@ -89,7 +89,9 @@ void GetIMUData() {
     // get the RTC time
     I2CMux.openChannel(RTC_CHANNEL);
     now = rtc.now();
-    String formattedDateTime = String(now.year()) + "-" + twoDigits(now.month()) + "-" + twoDigits(now.day()) + " " + twoDigits(now.hour()) + ":" + twoDigits(now.minute()) + ":" + twoDigits(now.second())+ DELIM;
+    flushableString += String(millis()) + DELIM;
+    Serial.println(String(millis()));
+    String formattedDateTime = twoDigits(now.hour()) + ":" + twoDigits(now.minute()) + ":" + twoDigits(now.second()) + DELIM;
     flushableString += formattedDateTime;
     I2CMux.closeChannel(RTC_CHANNEL);
 
@@ -113,7 +115,7 @@ void WriteIMUData() {
     if (dataFile) {
         // If file is empty or just created, write the headers
         if (dataFile.size() == 0) {
-            dataFile.println("Time, AccelX, AccelY, AccelZ, GyroX, GyroY, GyroZ, MagX, MagY, MagZ");
+            dataFile.println("SystemTime(ms),RealTime,AccelX,AccelY,AccelZ,GyroX,GyroY,GyroZ,MagX,MagY,MagZ");
         }
         
         // Now write the actual data
