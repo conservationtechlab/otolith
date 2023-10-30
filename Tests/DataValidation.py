@@ -1,7 +1,11 @@
+# This is a data validation test script
+# Author: Grace Jin
+# Input the acquired csv file (not the interpolated) and test if the data is correctly collected
+
 import pandas as pd
 import matplotlib.pyplot as plt
 
-EXPECTED_COLUMNS = ['Time', 'AccelX', 'AccelY', 'AccelZ', 'GyroX', 'GyroY', 'GyroZ', 'MagX', 'MagY', 'MagZ']
+EXPECTED_COLUMNS = ['SystemTime(ms)', 'RealTime', 'AccelX', 'AccelY', 'AccelZ', 'GyroX', 'GyroY', 'GyroZ', 'MagX', 'MagY', 'MagZ']
 EXPECTED_INTERVAL = 50  # in ms
 
 
@@ -14,12 +18,12 @@ def validate_data(filename):
         issues.append(f"Column names mismatch! Expected: {EXPECTED_COLUMNS} but got: {list(df.columns)}")
 
     # 2. Validate average time intervals
-    time_diffs = df['Time'].diff().dropna()
+    time_diffs = df['SystemTime(ms)'].diff().dropna()
     avg_interval = time_diffs.mean()
     if avg_interval != EXPECTED_INTERVAL:
         issues.append(f"Average time interval is {avg_interval}ms, expected {EXPECTED_INTERVAL}ms.")
 
-    # 3. Report largest timeshift
+    # 3. Report the largest timeshift
     timeshifts = abs(time_diffs - EXPECTED_INTERVAL)
     max_timeshift = timeshifts.max()
     if max_timeshift > 0:
@@ -35,7 +39,7 @@ def validate_data(filename):
         issues.append(f"There are {missing_values_count} missing values in the data.")
 
     # 6. Report missing datapoints
-    duration = df['Time'].iloc[-1] - df['Time'].iloc[0]
+    duration = df['SystemTime(ms)'].iloc[-1] - df['SystemTime(ms)'].iloc[0]
     expected_data_points = duration / EXPECTED_INTERVAL
     missing_data_points = expected_data_points - len(df)
     if missing_data_points > 0:
@@ -46,7 +50,7 @@ def validate_data(filename):
     frequency_dist = time_diffs.value_counts()
     # Histogram for frequency distribution
     plt.figure(figsize=(10, 6))
-    plt.hist(df['Time'].diff().dropna(), bins=30, edgecolor='k', alpha=0.65)
+    plt.hist(df['SystemTime(ms)'].diff().dropna(), bins=30, edgecolor='k', alpha=0.65)
     plt.axvline(EXPECTED_INTERVAL, color='r', linestyle='dashed', linewidth=1)
     plt.title('Frequency Distribution of Time Intervals')
     plt.xlabel('Time Intervals (ms)')
