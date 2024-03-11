@@ -12,11 +12,12 @@ EXPECTED_INTERVAL = 50  # in ms
 def validate_data(filename):
     df = pd.read_csv(filename)
     issues = []
-
+    print("----------Validating Data----------")
     # 1. Validate column names
     if not all(col in df.columns for col in EXPECTED_COLUMNS):
         issues.append(f"Column names mismatch! Expected: {EXPECTED_COLUMNS} but got: {list(df.columns)}")
-
+    else:
+        print("Correct - All the column names matches expectation.")
     # 2. Validate average time intervals
     time_diffs = df['SystemTime(ms)'].diff().dropna()
     avg_interval = time_diffs.mean()
@@ -32,12 +33,14 @@ def validate_data(filename):
     # 4. Check for duplicated rows
     if df.duplicated().any():
         issues.append(f"There are {df.duplicated().sum()} duplicated rows in the data.")
-
+    else:
+        print("Correct - No duplicated rows with same timestamps found.")
     # 5. Check for missing values
     missing_values_count = df.isna().sum().sum()
     if missing_values_count > 0:
         issues.append(f"There are {missing_values_count} missing values in the data.")
-
+    else:
+        print("Correct - No timestamps are logged without sensor data.")
     # 6. Report missing datapoints
     duration = df['SystemTime(ms)'].iloc[-1] - df['SystemTime(ms)'].iloc[0]
     expected_data_points = duration / EXPECTED_INTERVAL
@@ -60,6 +63,7 @@ def validate_data(filename):
 
     # Print out all issues
     if issues:
+        print("-----SUMMARY-----")
         print("Issues found:")
         for issue in issues:
             print("- " + issue)
