@@ -77,7 +77,7 @@ DateTime now;
 #define TIMER_INTERVAL_50MS             50L
 #define TIMER_INTERVAL_1S             1000L
 #define IMU_CHANNEL                      2
-#define RTC_CHANNEL                      3
+#define RTC_CHANNEL                      1
 
 void TimerHandler(void)
 {
@@ -92,6 +92,7 @@ void GetIMUData() {
     flushableString += String(millis()) + DELIM;
     Serial.println(String(millis()));
     String formattedDateTime = twoDigits(now.hour()) + ":" + twoDigits(now.minute()) + ":" + twoDigits(now.second()) + DELIM;
+    Serial.println(formattedDateTime);
     flushableString += formattedDateTime;
     I2CMux.closeChannel(RTC_CHANNEL);
 
@@ -182,10 +183,16 @@ void setup()
     Serial.println("Couldn't find RTC");
     while (1);
   }
-
-  // Uncomment the next line if want to set the RTC to a specific date and time
-   rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
- 
+  
+//  // Uncomment the next line to set the RTC to a specific date and time, only needed once
+//   rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+//   
+//   // Uncomment the next block of code to ensure the clock runs on battery power, only needed once
+//   Wire.beginTransmission(0x57); // select the address for the rts
+//   Wire.write(0x0E); // select register
+//   Wire.write(0b00011100); // write register bitmap, bit 7 is /EOSC
+//   Wire.endTransmission();
+   
   // can use up to 16 timer for each ISR_Timer
   ISR_Timer.setInterval(TIMER_INTERVAL_50MS,  GetIMUData);
   ISR_Timer.setInterval(TIMER_INTERVAL_1S,  WriteIMUData);
