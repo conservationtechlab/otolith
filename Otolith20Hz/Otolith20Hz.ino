@@ -27,6 +27,7 @@
 #include <DFRobot_BMX160.h>
 #include <TCA9548A.h>
 #include <RTClib.h>
+#include <LoRa.h>
 
 // TC3, TC4, TC5 max permissible HW_TIMER_INTERVAL_MS is 1398.101 ms, larger will overflow, therefore not permitted
 // Use TCC, TCC1, TCC2 for longer HW_TIMER_INTERVAL_MS
@@ -76,8 +77,9 @@ DateTime now;
 
 #define TIMER_INTERVAL_50MS             50L
 #define TIMER_INTERVAL_1S             1000L
-#define IMU_CHANNEL                      2
+#define TIMER_INTERVAL_60S           60000L
 #define RTC_CHANNEL                      1
+#define IMU_CHANNEL                      2
 
 void TimerHandler(void)
 {
@@ -90,7 +92,7 @@ void GetIMUData() {
     I2CMux.openChannel(RTC_CHANNEL);
     now = rtc.now();
     flushableString += String(millis()) + DELIM;
-    Serial.println(String(millis()));
+    // Serial.println(String(millis()));
     String formattedDateTime = twoDigits(now.hour()) + ":" + twoDigits(now.minute()) + ":" + twoDigits(now.second()) + DELIM;
     Serial.println(formattedDateTime);
     flushableString += formattedDateTime;
@@ -138,6 +140,14 @@ String twoDigits(int number) {
   return String(number);
 }
 
+void SendLoRa() {
+  Serial.print("Sending packet: ");
+  LoRa.beginPacket();
+  LoRa.print("hello");
+  Serial.print("Finish sending packet: ");
+  LoRa.endPacket();
+}
+
 void setup()
 {
   // sets the baud rate for serial data communication
@@ -183,19 +193,26 @@ void setup()
     Serial.println("Couldn't find RTC");
     while (1);
   }
+
+  // set up a simple Lora sender
+  if (!LoRa.begin(915E6)) {
+    Serial.println("Starting LoRa failed!");
+    while (1);
+  }
   
-//  // Uncomment the next line to set the RTC to a specific date and time, only needed once
-//   rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
-//   
-//   // Uncomment the next block of code to ensure the clock runs on battery power, only needed once
-//   Wire.beginTransmission(0x57); // select the address for the rts
-//   Wire.write(0x0E); // select register
-//   Wire.write(0b00011100); // write register bitmap, bit 7 is /EOSC
-//   Wire.endTransmission();
+  // // Uncomment the next line to set the RTC to a specific date and time, only needed once
+  // rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+  
+  // // Uncomment the next block of code to ensure the clock runs on battery power, only needed once
+  // Wire.beginTransmission(0x57); // select the address for the rts
+  // Wire.write(0x0E); // select register
+  // Wire.write(0b00011100); // write register bitmap, bit 7 is /EOSC
+  // Wire.endTransmission();
    
   // can use up to 16 timer for each ISR_Timer
   ISR_Timer.setInterval(TIMER_INTERVAL_50MS,  GetIMUData);
   ISR_Timer.setInterval(TIMER_INTERVAL_1S,  WriteIMUData);
+  ISR_Timer.setInterval(TIMER_INTERVAL_60S, SendLoRa);
 }
 
 
