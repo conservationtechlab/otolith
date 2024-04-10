@@ -140,6 +140,7 @@ String twoDigits(int number) {
   return String(number);
 }
 
+// Send simple messages for lora
 void SendLoRa() {
   Serial.print("Sending packet: ");
   LoRa.beginPacket();
@@ -212,7 +213,7 @@ void setup()
   // can use up to 16 timer for each ISR_Timer
   ISR_Timer.setInterval(TIMER_INTERVAL_50MS,  GetIMUData);
   ISR_Timer.setInterval(TIMER_INTERVAL_1S,  WriteIMUData);
-  ISR_Timer.setInterval(TIMER_INTERVAL_60S, SendLoRa);
+  ISR_Timer.setInterval(TIMER_INTERVAL_60S, SendLoRa);  // Remove this part if the lora doesn't work
 }
 
 
