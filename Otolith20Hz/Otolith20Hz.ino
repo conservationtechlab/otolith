@@ -140,15 +140,6 @@ String twoDigits(int number) {
   return String(number);
 }
 
-// Send simple messages for lora
-void SendLoRa() {
-  Serial.print("Sending packet: ");
-  LoRa.beginPacket();
-  LoRa.print("hello");
-  Serial.print("Finish sending packet: ");
-  LoRa.endPacket();
-}
-
 void setup()
 {
   // sets the baud rate for serial data communication
@@ -194,12 +185,6 @@ void setup()
     Serial.println("Couldn't find RTC");
     while (1);
   }
-
-  // set up a simple Lora sender
-  if (!LoRa.begin(915E6)) {
-    Serial.println("Starting LoRa failed!");
-    while (1);
-  }
   
   // // Uncomment the next line to set the RTC to a specific date and time, only needed once
   // rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
@@ -213,7 +198,6 @@ void setup()
   // can use up to 16 timer for each ISR_Timer
   ISR_Timer.setInterval(TIMER_INTERVAL_50MS,  GetIMUData);
   ISR_Timer.setInterval(TIMER_INTERVAL_1S,  WriteIMUData);
-  ISR_Timer.setInterval(TIMER_INTERVAL_60S, SendLoRa);  // Remove this part if the lora doesn't work
 }
 
 
