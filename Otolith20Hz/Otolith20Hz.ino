@@ -27,7 +27,8 @@
 #include <DFRobot_BMX160.h>
 #include <TCA9548A.h>
 #include <RTClib.h>
-#include <LoRa.h>
+#include <MKRWAN.h>
+#include "lorainfo.h"
 
 // TC3, TC4, TC5 max permissible HW_TIMER_INTERVAL_MS is 1398.101 ms, larger will overflow, therefore not permitted
 // Use TCC, TCC1, TCC2 for longer HW_TIMER_INTERVAL_MS
@@ -75,9 +76,15 @@ String flushableString = "";
 String DELIM = ",";
 DateTime now;
 
+// Init a lora modem
+LoRaModem modem;
+String devAddr = SECRET_DEV_ADDR;
+String nwkSKey = SECRET_NWK_KEY;
+String appSKey = SECRET_APP_KEY;
+
 #define TIMER_INTERVAL_50MS             50L
 #define TIMER_INTERVAL_1S             1000L
-#define TIMER_INTERVAL_60S           60000L
+#define TIMER_INTERVAL_60S            5000L
 #define RTC_CHANNEL                      1
 #define IMU_CHANNEL                      2
 
@@ -94,7 +101,7 @@ void GetIMUData() {
     flushableString += String(millis()) + DELIM;
     // Serial.println(String(millis()));
     String formattedDateTime = twoDigits(now.hour()) + ":" + twoDigits(now.minute()) + ":" + twoDigits(now.second()) + DELIM;
-    Serial.println(formattedDateTime);
+    //Serial.println(formattedDateTime);
     flushableString += formattedDateTime;
     I2CMux.closeChannel(RTC_CHANNEL);
 
@@ -140,13 +147,21 @@ String twoDigits(int number) {
   return String(number);
 }
 
-// Send simple messages for lora
 void SendLoRa() {
-  Serial.print("Sending packet: ");
-  LoRa.beginPacket();
-  LoRa.print("hello");
-  Serial.print("Finish sending packet: ");
-  LoRa.endPacket();
+  Serial.println("Send Lora is called!");
+  // test lora setup
+  int err;
+  //modem.setPort(3);
+  modem.beginPacket();
+  Serial.println("Send Lora is called!------1");
+  //modem.print("HeLoRA world!");
+  err = modem.endPacket(true);
+  Serial.println("Send Lora is called!------2");
+  if (err > 0) {
+    Serial.println("Message sent correctly!");
+  } else {
+    Serial.println("Error sending message :(");
+  }
 }
 
 void setup()
@@ -195,10 +210,31 @@ void setup()
     while (1);
   }
 
-  // set up a simple Lora sender
-  if (!LoRa.begin(915E6)) {
-    Serial.println("Starting LoRa failed!");
-    while (1);
+  // change this to your regional band (eg. US915, AS923, ...)
+  if (!modem.begin(US915)) {
+    Serial.println("Failed to start module");
+    while (1) {}
+  };
+
+  int connected;
+  // Connect to the gateway through ABP
+  connected = modem.joinABP(devAddr, nwkSKey, appSKey);
+
+  if (!connected) {
+    Serial.println("Something went wrong; are you indoor? Move near a window and retry");
+    while (1) {}
+  }
+
+  // verify lora setup
+  int err;
+  modem.setPort(3);
+  modem.beginPacket();
+  modem.print("HeLoRA world!");
+  err = modem.endPacket(true);
+  if (err > 0) {
+    Serial.println("Message sent correctly!");
+  } else {
+    Serial.println("Error sending message :(");
   }
   
   // // Uncomment the next line to set the RTC to a specific date and time, only needed once
